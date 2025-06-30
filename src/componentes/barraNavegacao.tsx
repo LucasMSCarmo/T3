@@ -49,6 +49,17 @@ export default function BarraNavegacao(props: Props) {
                             <a
                                 className="nav-link py-2 px-3 rounded-2"
                                 href="#"
+                                onClick={(e) => seletorView('Registrar Compra', e)}
+                            >
+                                <i className="bi bi-cart-plus me-2"></i>
+                                Registrar Compra
+                            </a>
+                        </li>
+
+                        <li className="nav-item mx-1">
+                            <a
+                                className="nav-link py-2 px-3 rounded-2"
+                                href="#"
                                 onClick={(e) => seletorView('Catálogo', e)}
                             >
                                 <i className="bi bi-journal-album me-2"></i>

@@ -15,6 +15,7 @@ import RelatorioTopConsumidores from "./relatoriosTopConsumidores";
 import RelatorioMaisConsumidos from "./relatorioMaisConsumidos";
 import RelatorioConsumoPets from "./relatorioConsumoPets";
 import RelatorioTopValor from "./relatorioTopValor";
+import FormularioRegistroCompra from './formularioRegistroCompra';
 import { clientes as dadosClientes, produtos as dadosProdutos, servicos as dadosServicos } from "./dados";
 import { Cliente, Pet, Produto, Servico } from "./dados";
 
@@ -30,6 +31,49 @@ export default function Roteador() {
     const [produtoSelecionadoParaEdicao, setProdutoSelecionadoParaEdicao] = useState<Produto | null>(null);
     const [servicoSelecionadoParaEdicao, setServicoSelecionadoParaEdicao] = useState<Servico | null>(null);
     const [telaAnterior, setTelaAnterior] = useState('Clientes');
+
+    const registrarCompra = useCallback((cliente: Cliente, petNome: string, produtos: { produto: Produto, quantidade: number }[], servicos: Servico[]) => {
+        const dataAtual = new Date();
+
+        setClientes(prevClientes => {
+            const clientesAtualizados = prevClientes.map(c => {
+                if (c.email === cliente.email) {
+                    const petsAtualizados = c.pets.map(pet => {
+                        if (pet.nome === petNome) {
+                            const novosProdutos = produtos.map(p => ({
+                                produto: p.produto,
+                                quantidade: p.quantidade,
+                                data: dataAtual
+                            }));
+
+                            const novosServicos = servicos.map(s => ({
+                                servico: s,
+                                data: dataAtual
+                            }));
+
+                            return {
+                                ...pet,
+                                produtosConsumidos: [...pet.produtosConsumidos, ...novosProdutos],
+                                servicosConsumidos: [...pet.servicosConsumidos, ...novosServicos]
+                            };
+                        }
+                        return pet;
+                    });
+
+                    return {
+                        ...c,
+                        pets: petsAtualizados
+                    };
+                }
+                return c;
+            });
+
+            return clientesAtualizados;
+        });
+
+        alert("Compra registrada com sucesso!");
+        setTela('Clientes');
+    }, []);
 
     const selecionarView = useCallback((novaTela: string, evento: React.MouseEvent) => {
         evento.preventDefault();
@@ -80,7 +124,7 @@ export default function Roteador() {
             return;
         }
         const petCompleto = { ...novoPet, produtosConsumidos: [], servicosConsumidos: [] };
-        
+
         let clienteAtualizado: Cliente | null = null;
         const clientesAtualizados = clientes.map(c => {
             if (c.email === clienteAlvo.email) {
@@ -90,7 +134,7 @@ export default function Roteador() {
             }
             return c;
         });
-        
+
         setClientes(clientesAtualizados);
         setTela('Detalhes Cliente');
         setClienteSelecionado(clienteAtualizado);
@@ -117,7 +161,7 @@ export default function Roteador() {
 
     const salvarEdicaoPet = useCallback((petAtualizado: Pet) => {
         if (!clienteSelecionado || !petSelecionadoParaEdicao) return;
-        
+
         const petOriginal = petSelecionadoParaEdicao;
         let clienteAtualizado: Cliente | null = null;
         const clientesAtualizados = clientes.map(cliente => {
@@ -128,7 +172,7 @@ export default function Roteador() {
             }
             return cliente;
         });
-        
+
         setClientes(clientesAtualizados);
         setClienteSelecionado(clienteAtualizado);
         setPetSelecionadoParaEdicao(null);
@@ -153,7 +197,7 @@ export default function Roteador() {
         if (!produtoOriginal) return;
 
         const produtosAtualizados = produtos.map(p => p.nome === produtoOriginal.nome ? produtoAtualizado : p);
-        
+
         setProdutos(produtosAtualizados);
         setProdutoSelecionadoParaEdicao(null);
     }, [produtos, produtoSelecionadoParaEdicao]);
@@ -175,16 +219,16 @@ export default function Roteador() {
     const salvarEdicaoServico = useCallback((servicoAtualizado: Servico) => {
         const servicoOriginal = servicoSelecionadoParaEdicao;
         if (!servicoOriginal) return;
-        
+
         const servicosAtualizados = servicos.map(s => s.nome === servicoOriginal.nome ? servicoAtualizado : s);
-        
+
         setServicos(servicosAtualizados);
         setServicoSelecionadoParaEdicao(null);
     }, [servicos, servicoSelecionadoParaEdicao]);
 
     const iniciarEdicaoServico = useCallback((servico: Servico) => { setServicoSelecionadoParaEdicao(servico); }, []);
     const cancelarEdicaoServico = useCallback(() => { setServicoSelecionadoParaEdicao(null); }, []);
-    
+
     return (
         <>
             <BarraNavegacao
@@ -202,7 +246,7 @@ export default function Roteador() {
 
                 {tela === 'Clientes' && <ListaCliente tema="#6c757d" clientes={clientes} onDetalhes={mostrarDetalhesCliente} onEditar={(cliente) => { setTela('Editar Cliente'); setClienteSelecionado(cliente); }} onExcluir={excluirCliente} />}
                 {tela === 'Catálogo' && <Catalogo tema="#6c757d" produtos={produtos} servicos={servicos} onEditarProduto={iniciarEdicaoProduto} onExcluirProduto={excluirProduto} onEditarServico={iniciarEdicaoServico} onExcluirServico={excluirServico} />}
-                
+
                 {tela === 'RelatoriosConsumo' && <RelatorioTopConsumidores tema="#6c757d" clientes={clientes} onClienteSelect={mostrarDetalhesCliente} />}
                 {tela === 'RelatorioMaisConsumidos' && <RelatorioMaisConsumidos tema="#6c757d" clientes={clientes} />}
                 {tela === 'RelatorioConsumoPets' && <RelatorioConsumoPets tema="#6c757d" clientes={clientes} />}
@@ -214,7 +258,7 @@ export default function Roteador() {
                 {tela === 'Cadastrar Pet' && <FormularioCadastroPet tema="#6c757d" cliente={clienteSelecionado} clientes={clientes} onSubmit={adicionarPet} onCancelar={() => { const proximaTela = origemCadastroPet === 'detalhes' ? 'Detalhes Cliente' : 'Clientes'; setTela(proximaTela); }} />}
 
                 {tela === 'Editar Cliente' && clienteSelecionado && <FormularioEdicaoCliente cliente={clienteSelecionado} tema="#6c757d" onFechar={() => setTela('Clientes')} onSalvar={editarCliente} />}
-                
+
                 {tela === 'Detalhes Cliente' && clienteSelecionado && (
                     <>
                         <DetalhesCliente cliente={clienteSelecionado} tema="#6c757d" onFechar={fecharDetalhes} onCadastrarPet={() => abrirCadastroPet('detalhes', clienteSelecionado)} onExcluirPet={(pet) => excluirPet(clienteSelecionado, pet)} onIniciarEdicaoPet={iniciarEdicaoPet} />
@@ -224,6 +268,17 @@ export default function Roteador() {
 
                 {produtoSelecionadoParaEdicao && <FormularioEdicaoProduto tema="#6c757d" produto={produtoSelecionadoParaEdicao} onSalvar={salvarEdicaoProduto} onCancelar={cancelarEdicaoProduto} />}
                 {servicoSelecionadoParaEdicao && <FormularioEdicaoServico tema="#6c757d" servico={servicoSelecionadoParaEdicao} onSalvar={salvarEdicaoServico} onCancelar={cancelarEdicaoServico} />}
+
+                {tela === 'Registrar Compra' && (
+                    <FormularioRegistroCompra
+                        tema="#6c757d"
+                        clientes={clientes}
+                        produtos={produtos}
+                        servicos={servicos}
+                        onSubmit={registrarCompra}
+                        onCancelar={() => setTela('Clientes')}
+                    />
+                )}
             </div>
         </>
     );
